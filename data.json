@@ -1,0 +1,39 @@
+{
+  "units": [
+    {
+      "id": 1,
+      "title": "Unit 1 – Daily Routines",
+      "audio": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+      "bg": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1600&q=80",
+      "transcript": "Every [morning], Sarah [wakes] up at six o'clock. She [brushes] her teeth and [washes] her face before going downstairs. In the kitchen, she [makes] a cup of coffee and [reads] the newspaper. After [breakfast], she [gets] dressed and [leaves] the house at seven thirty. She always [takes] the bus to work because she enjoys [watching] the city [wake] up around her."
+    },
+    {
+      "id": 2,
+      "title": "Unit 2 – At the Restaurant",
+      "audio": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+      "bg": "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1600&q=80",
+      "transcript": "Good [evening]! Welcome to La Bella Italia. Do you have a [reservation]? — Yes, we [booked] a table for two under the name Johnson. — Please [follow] me. Here are your [menus]. Our [special] tonight is grilled salmon with lemon [butter] sauce. Can I [start] you off with something to [drink]? — We'd like a [bottle] of sparkling water, please. And could we have a few more [minutes] to look at the menu?"
+    },
+    {
+      "id": 3,
+      "title": "Unit 3 – Travel & Adventure",
+      "audio": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+      "bg": "https://images.unsplash.com/photo-1488085061387-422e29b40080?w=1600&q=80",
+      "transcript": "Last [summer], my family and I [decided] to travel to Japan. We [flew] from Hanoi and [arrived] in Tokyo after a twelve-hour [flight]. The city was [absolutely] breathtaking — the [mixture] of ancient temples and [modern] skyscrapers was unlike anything we had ever [seen]. We [visited] Mount Fuji on our third day and [took] hundreds of photographs. The [experience] changed the way I [think] about the world."
+    },
+    {
+      "id": 4,
+      "title": "Unit 4 – Technology & Future",
+      "audio": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+      "bg": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=1600&q=80",
+      "transcript": "Artificial [intelligence] is rapidly [transforming] the way we live and work. Machines can now [recognize] faces, [translate] languages, and even [compose] music. Experts [believe] that within the next two [decades], self-driving cars will be [common] on our roads. However, many people [worry] about the impact of [automation] on [employment]. It is [crucial] that governments and [companies] work together to [prepare] workers for these dramatic [changes]."
+    },
+    {
+      "id": 5,
+      "title": "Unit 5 – Environment",
+      "audio": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+      "bg": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1600&q=80",
+      "transcript": "Climate [change] is one of the most [pressing] issues facing humanity today. Rising [temperatures] are causing glaciers to [melt] and sea [levels] to rise, [threatening] coastal communities around the world. Scientists [warn] that we must [reduce] carbon [emissions] by at least fifty percent within the next ten [years] to avoid the worst [consequences]. Small [actions], such as [recycling], using public [transport], and saving [energy], can make a big [difference] when millions of people [participate]."
+    }
+  ]
+}
