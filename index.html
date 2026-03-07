@@ -414,169 +414,240 @@ const audio = document.getElementById('audio-el');
 
 // ── Load data ──
 async function init() {
-  try {
-    const res = await fetch('data.json');
-    const data = await res.json();
-    units = data.units;
-    renderSidebar();
-    loadUnit(units[0]);
-  } catch(e) {
-    console.error('Failed to load data.json', e);
-  } finally {
-    setTimeout(() => document.getElementById('loading').classList.add('hide'), 600);
-  }
+    try {
+        const res = await fetch('data.json');
+        const data = await res.json();
+        units = data.units;
+        
+        renderSidebar();
+
+        // Lấy ID từ URL (ví dụ: index.html?id=123)
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlId = urlParams.get('id');
+        
+        let unitToLoad;
+        if (urlId) {
+            // Tìm unit có id khớp với URL
+            unitToLoad = units.find(u => u.id == urlId);
+        }
+        
+        // Nếu không tìm thấy hoặc không có ID trên URL, lấy bài đầu tiên
+        if (!unitToLoad) unitToLoad = units[0];
+        
+        if (unitToLoad) {
+            loadUnit(unitToLoad);
+        }
+    } catch(e) {
+        console.error('Failed to load data.json', e);
+        document.getElementById('transcript-box').innerHTML = 
+            `<span style="color:#ff4444">Error: Could not load data. Check data.json file.</span>`;
+    } finally {
+        setTimeout(() => document.getElementById('loading').classList.add('hide'), 600);
+    }
 }
 
 // ── Sidebar ──
 function renderSidebar() {
-  const list = document.getElementById('unit-list');
-  list.innerHTML = units.map(u => `
-    <div class="unit-item" id="item-${u.id}" onclick="loadUnit(units[${u.id-1}])">
-      <div class="unit-num">${u.id}</div>
-      <span>${u.title}</span>
-    </div>`).join('');
+    const list = document.getElementById('unit-list');
+    // Chỉnh sửa onclick để tìm đúng object trong mảng units dựa trên ID
+    list.innerHTML = units.map(u => `
+        <div class="unit-item" id="item-${u.id}" onclick="navigateToUnit(${u.id})">
+            <div class="unit-num">${units.indexOf(u) + 1}</div>
+            <span>${u.title}</span>
+        </div>`).join('');
+}
+
+// Hàm hỗ trợ chuyển bài và cập nhật URL mà không load lại trang
+function navigateToUnit(id) {
+    const unit = units.find(u => u.id == id);
+    if (unit) {
+        // Cập nhật URL để giáo viên có thể copy link gửi cho học sinh
+        const newurl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?id=' + id;
+        window.history.pushState({path:newurl}, '', newurl);
+        loadUnit(unit);
+    }
 }
 
 function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('collapsed');
+    document.getElementById('sidebar').classList.toggle('collapsed');
 }
 
 // ── Load Unit ──
 function loadUnit(u) {
-  currentUnit = u;
-  // BG
-  document.getElementById('bg-layer').style.backgroundImage = `url('${u.bg}')`;
-  // Sidebar active
-  document.querySelectorAll('.unit-item').forEach(el => el.classList.remove('active'));
-  document.getElementById(`item-${u.id}`)?.classList.add('active');
-  // Header
-  document.getElementById('header-unit-title').textContent = u.title;
-  document.getElementById('player-title').textContent = u.title;
-  // Audio
-  audio.src = u.audio;
-  audio.load();
-  stopPlaying();
-  // Transcript
-  renderTranscript(u.transcript);
-  document.getElementById('score-area').innerHTML = '';
+    currentUnit = u;
+    // BG
+    document.getElementById('bg-layer').style.backgroundImage = `url('${u.bg}')`;
+    // Sidebar active - xóa active cũ và thêm active mới dựa trên ID chuẩn
+    document.querySelectorAll('.unit-item').forEach(el => el.classList.remove('active'));
+    const activeItem = document.getElementById(`item-${u.id}`);
+    if (activeItem) {
+        activeItem.classList.add('active');
+        // Tự động cuộn sidebar đến mục đang chọn
+        activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // Header & Player
+    document.getElementById('header-unit-title').textContent = u.title;
+    document.getElementById('player-title').textContent = u.title;
+    
+    // Audio
+    audio.src = u.audio;
+    audio.load();
+    stopPlaying();
+    
+    // Reset tốc độ về 1x khi đổi bài
+    rateIdx = 1;
+    audio.playbackRate = 1;
+    document.getElementById('rate-btn').textContent = '1×';
+
+    // Transcript
+    renderTranscript(u.transcript);
+    document.getElementById('score-area').innerHTML = '';
 }
 
 // ── Transcript ──
 function renderTranscript(raw) {
-  const box = document.getElementById('transcript-box');
-  answers = [];
-  let idx = 0;
-  let html = raw.replace(/\[(\w+)\]/g, (_, word) => {
-    idx++;
-    answers.push({ id: idx, answer: word });
-    const w = Math.max(70, word.length * 12);
-    return `<span class="blank-wrap">
-      <span class="blank-num">${idx}</span>
-      <input class="blank-input" id="blank-${idx}" style="width:${w}px" data-answer="${word}" autocomplete="off" spellcheck="false" placeholder="..."/>
-    </span>`;
-  });
-  box.innerHTML = html;
+    const box = document.getElementById('transcript-box');
+    answers = [];
+    let idx = 0;
+    
+    // Regex nâng cấp: hỗ trợ từ có dấu gạch ngang [well-known] hoặc số [9.30]
+    let html = raw.replace(/\[([\w\d\.-]+)\]/g, (_, word) => {
+        idx++;
+        answers.push({ id: idx, answer: word });
+        // Tự động tính toán chiều rộng ô input dựa trên độ dài từ
+        const w = Math.max(80, word.length * 10 + 20);
+        return `<span class="blank-wrap">
+            <span class="blank-num">${idx}</span>
+            <input class="blank-input" id="blank-${idx}" style="width:${w}px" 
+                   data-answer="${word}" autocomplete="off" spellcheck="false" placeholder="..."/>
+        </span>`;
+    });
+    box.innerHTML = html;
 }
 
 // ── Check ──
 function checkResults() {
-  let correct = 0;
-  answers.forEach(({id, answer}) => {
-    const inp = document.getElementById(`blank-${id}`);
-    if (!inp) return;
-    // Remove old hint
-    const old = document.getElementById(`hint-${id}`);
-    if (old) old.remove();
+    let correct = 0;
+    if (answers.length === 0) return;
 
-    const val = inp.value.trim().toLowerCase();
-    if (val === answer.toLowerCase()) {
-      inp.className = 'blank-input correct';
-      correct++;
-    } else {
-      inp.className = 'blank-input wrong';
-      const hint = document.createElement('span');
-      hint.className = 'answer-hint';
-      hint.id = `hint-${id}`;
-      hint.textContent = `(${answer})`;
-      inp.parentNode.appendChild(hint);
-    }
-  });
-  const total = answers.length;
-  document.getElementById('score-area').innerHTML =
-    `<div class="score-badge">🎯 Score: ${correct}/${total} — ${Math.round(correct/total*100)}%</div>`;
+    answers.forEach(({id, answer}) => {
+        const inp = document.getElementById(`blank-${id}`);
+        if (!inp) return;
+        
+        // Xóa hint cũ nếu có
+        const oldHint = inp.parentNode.querySelector('.answer-hint');
+        if (oldHint) oldHint.remove();
+
+        const val = inp.value.trim().toLowerCase();
+        // So sánh không phân biệt hoa thường
+        if (val === answer.toLowerCase()) {
+            inp.className = 'blank-input correct';
+            correct++;
+        } else {
+            inp.className = 'blank-input wrong';
+            const hint = document.createElement('span');
+            hint.className = 'answer-hint';
+            hint.textContent = `(${answer})`;
+            inp.parentNode.appendChild(hint);
+        }
+    });
+    
+    const total = answers.length;
+    const percentage = Math.round((correct / total) * 100);
+    document.getElementById('score-area').innerHTML =
+        `<div class="score-badge">🎯 Score: ${correct}/${total} — ${percentage}%</div>`;
 }
 
 // ── Reset ──
 function resetInputs() {
-  answers.forEach(({id}) => {
-    const inp = document.getElementById(`blank-${id}`);
-    if (!inp) return;
-    inp.value = '';
-    inp.className = 'blank-input';
-    const hint = document.getElementById(`hint-${id}`);
-    if (hint) hint.remove();
-  });
-  document.getElementById('score-area').innerHTML = '';
+    answers.forEach(({id}) => {
+        const inp = document.getElementById(`blank-${id}`);
+        if (!inp) return;
+        inp.value = '';
+        inp.className = 'blank-input';
+        const hint = inp.parentNode.querySelector('.answer-hint');
+        if (hint) hint.remove();
+    });
+    document.getElementById('score-area').innerHTML = '';
 }
 
-// ── Audio Player ──
+// ── Audio Player Events ──
 audio.addEventListener('timeupdate', () => {
-  const pct = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
-  document.getElementById('progress-fill').style.width = pct + '%';
-  document.getElementById('time-current').textContent = fmt(audio.currentTime);
+    if (!isNaN(audio.duration)) {
+        const pct = (audio.currentTime / audio.duration) * 100;
+        document.getElementById('progress-fill').style.width = pct + '%';
+        document.getElementById('time-current').textContent = fmt(audio.currentTime);
+    }
 });
+
 audio.addEventListener('loadedmetadata', () => {
-  document.getElementById('time-total').textContent = fmt(audio.duration);
+    document.getElementById('time-total').textContent = fmt(audio.duration);
 });
+
 audio.addEventListener('ended', () => {
-  stopPlaying();
-  if (loopOn) { audio.currentTime = 0; togglePlay(); }
+    if (loopOn) {
+        audio.currentTime = 0;
+        audio.play();
+    } else {
+        stopPlaying();
+    }
 });
 
 function fmt(s) {
-  if (!isFinite(s)) return '0:00';
-  const m = Math.floor(s/60), sec = Math.floor(s%60);
-  return `${m}:${sec.toString().padStart(2,'0')}`;
+    if (isNaN(s)) return '0:00';
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, '0')}`;
 }
 
 function togglePlay() {
-  if (audio.paused) {
-    audio.play().catch(()=>{});
-    document.getElementById('play-btn').textContent = '⏸';
-    document.getElementById('disc').classList.add('playing');
-  } else {
-    audio.pause();
-    stopPlaying();
-  }
+    if (!audio.src) return;
+    if (audio.paused) {
+        audio.play().catch(e => console.error("Playback failed:", e));
+        document.getElementById('play-btn').textContent = '⏸';
+        document.getElementById('disc').classList.add('playing');
+    } else {
+        audio.pause();
+        document.getElementById('play-btn').textContent = '▶';
+        document.getElementById('disc').classList.remove('playing');
+    }
 }
 
 function stopPlaying() {
-  audio.pause();
-  document.getElementById('play-btn').textContent = '▶';
-  document.getElementById('disc').classList.remove('playing');
+    audio.pause();
+    document.getElementById('play-btn').textContent = '▶';
+    document.getElementById('disc').classList.remove('playing');
 }
 
-function skipAudio(sec) { audio.currentTime = Math.max(0, audio.currentTime + sec); }
+function skipAudio(sec) { 
+    audio.currentTime = Math.min(audio.duration, Math.max(0, audio.currentTime + sec)); 
+}
 
 function seekAudio(e) {
-  const bar = document.getElementById('progress-bar');
-  const ratio = e.offsetX / bar.offsetWidth;
-  audio.currentTime = ratio * audio.duration;
+    const bar = document.getElementById('progress-bar');
+    const rect = bar.getBoundingClientRect();
+    const ratio = (e.clientX - rect.left) / rect.width;
+    audio.currentTime = ratio * audio.duration;
 }
 
-function setVolume(v) { audio.volume = v; }
+function setVolume(v) { 
+    audio.volume = v; 
+}
 
 function changeRate() {
-  rateIdx = (rateIdx + 1) % rates.length;
-  audio.playbackRate = rates[rateIdx];
-  document.getElementById('rate-btn').textContent = rates[rateIdx] + '×';
+    rateIdx = (rateIdx + 1) % rates.length;
+    audio.playbackRate = rates[rateIdx];
+    document.getElementById('rate-btn').textContent = rates[rateIdx] + '×';
 }
 
 function toggleLoop() {
-  loopOn = !loopOn;
-  document.getElementById('loop-btn').style.opacity = loopOn ? '1' : '0.5';
+    loopOn = !loopOn;
+    document.getElementById('loop-btn').style.opacity = loopOn ? '1' : '0.5';
+    document.getElementById('loop-btn').style.color = loopOn ? 'var(--cyan)' : 'white';
 }
 
+// Khởi chạy hệ thống
 init();
 </script>
 </body>
